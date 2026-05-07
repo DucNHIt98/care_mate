@@ -1,5 +1,6 @@
 services:
   web:
+    restart: unless-stopped
     build: .
     container_name: care_mate_web
     command: python manage.py runserver 0.0.0.0:8000
