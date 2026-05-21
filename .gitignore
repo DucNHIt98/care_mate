@@ -1,0 +1,9 @@
+venv/
+care_mate/venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+.idea/
+.vscode/
+*.sqlite3

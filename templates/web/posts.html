@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài viết - Care Mate</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f6fa;
+            min-height: 100vh;
+        }
+        .navbar {
+            background: white;
+            padding: 16px 32px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar h1 { font-size: 22px; color: #333; }
+        .navbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .navbar .user-info span { color: #666; font-size: 14px; }
+        .navbar .user-info button {
+            padding: 8px 16px;
+            background: #eee;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #555;
+            transition: background 0.2s;
+        }
+        .navbar .user-info button:hover { background: #ddd; }
+        .container {
+            max-width: 900px;
+            margin: 32px auto;
+            padding: 0 20px;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .toolbar .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .toolbar .filters input {
+            padding: 10px 14px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            min-width: 180px;
+            transition: border-color 0.2s;
+        }
+        .toolbar .filters input:focus { border-color: #667eea; }
+        .toolbar .filters button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+        .toolbar .filters button:hover { opacity: 0.9; }
+        .btn-create {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+        .btn-create:hover { opacity: 0.9; }
+        .post-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .post-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .post-card h3 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .post-card .meta {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 12px;
+        }
+        .post-card .excerpt {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        .empty p { font-size: 16px; margin-top: 8px; }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 24px;
+        }
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .pagination button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .pagination .page-info {
+            font-size: 14px;
+            color: #666;
+            padding: 0 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 16px;
+        }
+        .msg {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+        .msg.error { background: #fee; color: #c33; display: block; }
+        .msg.success { background: #efe; color: #393; display: block; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🤝 Care Mate</h1>
+        <div class="user-info">
+            <span id="usernameDisplay"></span>
+            <button onclick="logout()">Đăng xuất</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="msg" id="msg"></div>
+        <div class="toolbar">
+            <div class="filters">
+                <input type="text" id="filterTitle" placeholder="Tìm theo tiêu đề...">
+                <input type="text" id="filterContent" placeholder="Tìm theo nội dung...">
+                <button onclick="loadPosts(1)">Tìm kiếm</button>
+            </div>
+            <a href="/api/web/posts/create/" class="btn-create">+ Bài viết mới</a>
+        </div>
+        <div id="postsContainer">
+            <div class="loading">Đang tải...</div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <script>
+        const API = '/api/';
+        let currentPage = 1;
+        let totalPages = 1;
+
+        function getToken() {
+            return localStorage.getItem('access_token');
+        }
+
+        async function authFetch(url, options = {}) {
+            const token = getToken();
+            const headers = { 'Content-Type': 'application/json', ...options.headers };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            const res = await fetch(API + url, { ...options, headers });
+            return res;
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/api/web/';
+        }
+
+        function showMsg(msg, type) {
+            const el = document.getElementById('msg');
+            el.textContent = msg;
+            el.className = 'msg ' + type;
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('vi-VN', {
+                year: 'numeric', month: 'long', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        async function loadPosts(page) {
+            const container = document.getElementById('postsContainer');
+            const pagination = document.getElementById('pagination');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            pagination.innerHTML = '';
+
+            const title = document.getElementById('filterTitle').value;
+            const content = document.getElementById('filterContent').value;
+            let url = `posts/?limit=10&page=${page}`;
+            if (title) url += `&title=${encodeURIComponent(title)}`;
+            if (content) url += `&content=${encodeURIComponent(content)}`;
+
+            try {
+                const res = await authFetch(url);
+                const json = await res.json();
+                if (!json.is_success) throw new Error('Lỗi tải dữ liệu');
+
+                const data = json.data;
+                totalPages = data.total_pages;
+                currentPage = page;
+                const posts = data.data;
+
+                if (!posts || posts.length === 0) {
+                    container.innerHTML = '<div class="empty">📝 <p>Chưa có bài viết nào</p></div>';
+                    return;
+                }
+
+                container.innerHTML = posts.map(post => `
+                    <div class="post-card" onclick="window.location.href='/api/web/posts/${post.id}/'">
+                        <h3>${escapeHtml(post.title)}</h3>
+                        <div class="meta">Tác giả: ${escapeHtml(post.author_username || 'Unknown')} • ${formatDate(post.created_at)}</div>
+                        <div class="excerpt">${escapeHtml(post.content)}</div>
+                    </div>
+                `).join('');
+
+                renderPagination(pagination);
+            } catch (err) {
+                container.innerHTML = '<div class="empty">⚠️ <p>Không thể tải bài viết</p></div>';
+            }
+        }
+
+        function renderPagination(el) {
+            if (totalPages <= 1) return;
+            let html = '';
+            html += `<button ${currentPage <= 1 ? 'disabled' : ''} onclick="loadPosts(${currentPage - 1})">Trước</button>`;
+            html += `<span class="page-info">Trang ${currentPage} / ${totalPages}</span>`;
+            html += `<button ${currentPage >= totalPages ? 'disabled' : ''} onclick="loadPosts(${currentPage + 1})">Sau</button>`;
+            el.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function loadUserInfo() {
+            const span = document.getElementById('usernameDisplay');
+            const token = getToken();
+            if (!token) { logout(); return; }
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                span.textContent = '👤 ' + (payload.username || payload.user_id || 'User');
+            } catch {
+                span.textContent = '👤 User';
+            }
+        }
+
+        loadUserInfo();
+        loadPosts(1);
+    </script>
+</body>
+</html>

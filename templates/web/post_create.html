@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo bài viết - Care Mate</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f6fa;
+            min-height: 100vh;
+        }
+        .navbar {
+            background: white;
+            padding: 16px 32px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar h1 { font-size: 22px; color: #333; }
+        .navbar a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .card h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 24px;
+        }
+        .form-group { margin-bottom: 20px; }
+        label {
+            display: block; margin-bottom: 6px;
+            font-size: 14px; font-weight: 500; color: #555;
+        }
+        input, textarea {
+            width: 100%; padding: 12px 16px;
+            border: 2px solid #e1e1e1; border-radius: 8px;
+            font-size: 15px; transition: border-color 0.2s; outline: none;
+            font-family: inherit;
+        }
+        input:focus, textarea:focus { border-color: #667eea; }
+        textarea { min-height: 200px; resize: vertical; }
+        .btn {
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-secondary {
+            padding: 12px 32px;
+            background: #eee; color: #555;
+            border: none; border-radius: 8px;
+            font-size: 16px; cursor: pointer;
+            margin-left: 12px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-group { display: flex; align-items: center; margin-top: 8px; }
+        .error {
+            background: #fee; color: #c33;
+            padding: 12px; border-radius: 8px;
+            margin-bottom: 16px; font-size: 14px; display: none;
+        }
+        .success {
+            background: #efe; color: #393;
+            padding: 12px; border-radius: 8px;
+            margin-bottom: 16px; font-size: 14px; display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🤝 Care Mate</h1>
+        <a href="/api/web/posts/">← Quay lại danh sách</a>
+    </div>
+    <div class="container">
+        <div class="card">
+            <h2>Tạo bài viết mới</h2>
+            <div class="error" id="errorMessage"></div>
+            <div class="success" id="successMessage"></div>
+            <form id="postForm">
+                <div class="form-group">
+                    <label for="title">Tiêu đề</label>
+                    <input type="text" id="title" name="title" required placeholder="Nhập tiêu đề bài viết">
+                </div>
+                <div class="form-group">
+                    <label for="content">Nội dung</label>
+                    <textarea id="content" name="content" required placeholder="Viết nội dung bài viết..."></textarea>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn" id="submitBtn">Đăng bài</button>
+                    <a href="/api/web/posts/" class="btn-secondary">Hủy</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        const form = document.getElementById('postForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorEl = document.getElementById('errorMessage');
+        const successEl = document.getElementById('successMessage');
+
+        function getToken() {
+            return localStorage.getItem('access_token');
+        }
+
+        function checkAuth() {
+            if (!getToken()) { window.location.href = '/api/web/'; }
+        }
+        checkAuth();
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorEl.style.display = 'none';
+            successEl.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang đăng...';
+
+            try {
+                const res = await fetch('/api/posts/create/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`,
+                    },
+                    body: JSON.stringify({
+                        title: form.title.value,
+                        content: form.content.value,
+                    }),
+                });
+                const data = await res.json();
+                if (!data.is_success) {
+                    const msgs = Object.values(data.data || {}).flat().join(', ');
+                    throw new Error(msgs || 'Tạo bài viết thất bại');
+                }
+                successEl.textContent = 'Tạo bài viết thành công! Đang chuyển hướng...';
+                successEl.style.display = 'block';
+                setTimeout(() => { window.location.href = `/api/web/posts/${data.data.id}/`; }, 1000);
+            } catch (err) {
+                if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+                    window.location.href = '/api/web/';
+                    return;
+                }
+                errorEl.textContent = err.message;
+                errorEl.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Đăng bài';
+            }
+        });
+    </script>
+</body>
+</html>
